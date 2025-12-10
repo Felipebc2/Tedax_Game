@@ -1,4 +1,4 @@
-# Keep Solving and Nobody Explodes - Versão de Treino
+# Keep Solving and Nobody Explodes
 
 Jogo de desarmamento de bombas implementado em C com ncurses.
 

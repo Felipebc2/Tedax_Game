@@ -42,7 +42,6 @@ void inicializar_jogo(GameState *g, Dificuldade dificuldade) {
     gerar_novo_modulo(g);
 }
 
-// FUTURO: Esta função será uma thread (Mural de Módulos Pendentes)
 // Gera um novo módulo e adiciona ao jogo
 void gerar_novo_modulo(GameState *g) {
     if (g->qtd_modulos >= 100) {
@@ -84,7 +83,6 @@ void gerar_novo_modulo(GameState *g) {
     g->qtd_modulos++;
 }
 
-// FUTURO: Esta função será parte da thread do Mural
 // Atualiza o mural, gerando novos módulos conforme necessário
 // NOTA: Agora processamos 5 ticks por segundo (0.2s), então intervalo_geracao está em ticks
 void atualizar_mural(GameState *g) {
@@ -103,7 +101,6 @@ void atualizar_mural(GameState *g) {
     }
 }
 
-// FUTURO: Esta função será uma thread (Tedax)
 // Atualiza o estado do tedax e do módulo em execução
 // NOTA: O decremento do tempo_restante é feito no main.c a cada segundo completo
 // Esta função apenas verifica se o tempo acabou e processa o resultado

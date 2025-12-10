@@ -8,13 +8,12 @@
 #include "game.h"
 #include "ui.h"
 
-// FUTURO: Esta função será uma thread (Coordenador/Jogador)
 // Processa a entrada do teclado e atualiza o buffer de instrução
 void processar_entrada(GameState *g, char *buffer_instrucao, int *buffer_len) {
     int ch = getch();
     
     if (ch == ERR) {
-        return; // Nenhuma tecla pressionada neste tick
+        return;
     }
     
     // Tecla 'q' para sair (sempre permitida)
@@ -25,19 +24,11 @@ void processar_entrada(GameState *g, char *buffer_instrucao, int *buffer_len) {
     
     // Se o tedax estiver ocupado, desabilitar todos os outros inputs
     if (g->tedax.estado == TEDAX_OCUPADO) {
-        return; // Ignorar todos os inputs quando tedax está ocupado
+        return;
     }
     
-    // Processar tecla 'p' para adicionar aperto
-    if (ch == 'p' || ch == 'P') {
-        if (*buffer_len < 3) { // Máximo de 3 'p'
-            buffer_instrucao[*buffer_len] = 'p';
-            (*buffer_len)++;
-            buffer_instrucao[*buffer_len] = '\0';
-        }
-    }
     // Processar BACKSPACE
-    else if (ch == KEY_BACKSPACE || ch == 127 || ch == '\b') {
+    if (ch == KEY_BACKSPACE || ch == 127 || ch == '\b') {
         if (*buffer_len > 0) {
             (*buffer_len)--;
             buffer_instrucao[*buffer_len] = '\0';
@@ -78,7 +69,14 @@ void processar_entrada(GameState *g, char *buffer_instrucao, int *buffer_len) {
             }
             // Se não há módulos pendentes, ignorar ENTER
         }
-        // Se não há módulos pendentes, ignorar ENTER
+    }
+    // Aceitar qualquer caractere imprimível (exceto caracteres de controle)
+    else if (ch >= 32 && ch <= 126) { // Caracteres imprimíveis ASCII
+        if (*buffer_len < 15) { // Limite do buffer
+            buffer_instrucao[*buffer_len] = (char)ch;
+            (*buffer_len)++;
+            buffer_instrucao[*buffer_len] = '\0';
+        }
     }
 }
 

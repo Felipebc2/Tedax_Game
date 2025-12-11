@@ -70,12 +70,14 @@ void desenhar_tela(const GameState *g, const char *buffer_instrucao) {
             if (cores_disponiveis) {
                 attron(COLOR_PAIR(3)); // Amarelo
             }
-            mvprintw(linha++, 0, "  Tedax %d: ESPERANDO (Bancada %d)", t->id, 
-                     t->bancada_atual >= 0 ? g->bancadas[t->bancada_atual].id : 0);
             if (t->modulo_atual >= 0) {
                 const Modulo *mod = &g->modulos[t->modulo_atual];
-                mvprintw(linha++, 0, "    Aguardando para M%d Botao %s",
-                         mod->id, nome_cor(mod->cor));
+                mvprintw(linha++, 0, "  Tedax %d: ESPERANDO (Bancada %d) - Aguardando para M%d", 
+                         t->id, t->bancada_atual >= 0 ? g->bancadas[t->bancada_atual].id : 0,
+                         mod->id);
+            } else {
+                mvprintw(linha++, 0, "  Tedax %d: ESPERANDO (Bancada %d)", t->id, 
+                         t->bancada_atual >= 0 ? g->bancadas[t->bancada_atual].id : 0);
             }
             if (cores_disponiveis) {
                 attroff(COLOR_PAIR(3));
@@ -84,17 +86,18 @@ void desenhar_tela(const GameState *g, const char *buffer_instrucao) {
             if (cores_disponiveis) {
                 attron(COLOR_PAIR(3)); // Amarelo/Vermelho
             }
-            mvprintw(linha++, 0, "  Tedax %d: OCUPADO", t->id);
             if (t->modulo_atual >= 0) {
                 const Modulo *mod = &g->modulos[t->modulo_atual];
-                mvprintw(linha++, 0, "    Desarmando M%d Botao %s - Tempo restante: %d segundos",
-                         mod->id, nome_cor(mod->cor), mod->tempo_restante);
-            }
-            // Mostrar módulo em espera (máximo 1)
-            if (t->qtd_fila > 0 && t->fila_modulos[0] >= 0 && t->fila_modulos[0] < g->qtd_modulos) {
-                const Modulo *mod_fila = &g->modulos[t->fila_modulos[0]];
-                mvprintw(linha++, 0, "    Em espera: M%d Botao %s",
-                         mod_fila->id, nome_cor(mod_fila->cor));
+                mvprintw(linha++, 0, "  Tedax %d: OCUPADO - Desarmando M%d - Tempo restante: %d segundos",
+                         t->id, mod->id, mod->tempo_restante);
+                // Mostrar módulo em espera na linha de baixo
+                if (t->qtd_fila > 0 && t->fila_modulos[0] >= 0 && t->fila_modulos[0] < g->qtd_modulos) {
+                    const Modulo *mod_fila = &g->modulos[t->fila_modulos[0]];
+                    mvprintw(linha++, 0, "    Fila: M%d",
+                             mod_fila->id);
+                }
+            } else {
+                mvprintw(linha++, 0, "  Tedax %d: OCUPADO", t->id);
             }
             if (cores_disponiveis) {
                 attroff(COLOR_PAIR(3));

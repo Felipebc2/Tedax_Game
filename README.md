@@ -44,19 +44,21 @@ gcc -Wall -Wextra -std=c11 -Isrc -pthread src/main.c src/game.c src/ui.c -o jogo
 
 ## Como Jogar
 
-1. Ao iniciar o jogo, você verá um **menu de seleção de dificuldade** com três opções:
-   - **Fácil**: 4 módulos, 1 a cada 20 segundos
-   - **Médio**: 8 módulos, 1 a cada 15 segundos
-   - **Difícil**: 12 módulos, 1 a cada 10 segundos
+1. Ao iniciar o jogo, você verá um **menu de seleção de dificuldade** com três opções: **Fácil, Médio e Difícil**
 2. Use as setas do teclado para navegar e ENTER para selecionar a dificuldade.
-3. O jogo começa com 1 módulo já gerado.
-4. Cada módulo tem uma cor e requer uma sequência específica, que no arquivo de instruções está expecificado ao jogador
-5. Digite o comando no formato `T<tedax>B<bancada>M<modulo>:<instrucao>` (veja seção "Sistema de Input" abaixo)
-6. O tedax ocupará a bancada pelo tempo necessário para desarmar o módulo.
-7. Se a instrução estiver correta, o módulo é desarmado. Se estiver incorreta, ele volta para o mural como ultimo da fila.
-8. O jogo termina quando:
+3. Cada módulo tem uma cor e requer uma sequência específica, que no arquivo de instruções está expecificado ao jogador
+4. Digite o comando no formato `T<tedax>B<bancada>M<modulo>:<instrucao>` (veja seção "Sistema de Input" abaixo)
+5. O tedax ocupará a bancada pelo tempo necessário para desarmar o módulo.
+6. Se a instrução estiver correta, o módulo é desarmado. Se estiver incorreta, ele volta para o mural como ultimo da fila.
+7. O jogo termina quando:
    - Todos os módulos necessários são desarmados (VITÓRIA)
    - O tempo acaba e ainda há módulos pendentes (DERROTA)
+  
+### Regras Gerais
+- O jogo começa com **1 módulo já gerado**
+- Novos módulos são gerados automaticamente conforme o intervalo da dificuldade escolhida
+- A geração de módulos **para** quando o número máximo necessário é atingido
+- Para vencer, você precisa resolver **todos os módulos necessários** da dificuldade escolhida
 
 ## Controles
 

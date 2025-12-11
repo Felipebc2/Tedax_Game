@@ -435,13 +435,13 @@ int mostrar_menu_principal(void) {
                     definir_musica_ligada(0); // Notificar audio.c que música foi desligada
                 } else {
                     definir_musica_ligada(1); // Notificar audio.c que música foi ligada
-                    if (tocar_musica("audio/Menu.mp3")) {
+                    if (tocar_musica("sounds/Menu.mp3")) {
                         musica_ligada_global = 1;
                     } else {
                         // Falha ao tocar música - mostrar mensagem
                         clear();
                         mvprintw(LINES / 2, COLS / 2 - 25, "Erro ao tocar musica!");
-                        mvprintw(LINES / 2 + 1, COLS / 2 - 20, "Verifique: audio/Menu.mp3");
+                        mvprintw(LINES / 2 + 1, COLS / 2 - 20, "Verifique: sounds/Menu.mp3");
                         mvprintw(LINES / 2 + 3, COLS / 2 - 15, "Pressione qualquer tecla...");
                         refresh();
                         nodelay(stdscr, FALSE);
@@ -479,13 +479,13 @@ int mostrar_menu_principal(void) {
                 // Menu não é fase média, então volume normal
                 definir_dificuldade_musica(0);
                 definir_musica_ligada(1); // Notificar audio.c que música foi ligada
-                if (tocar_musica("audio/Menu.mp3")) {
+                if (tocar_musica("sounds/Menu.mp3")) {
                     musica_ligada_global = 1;
                 } else {
                     // Falha ao tocar música
                     clear();
                     mvprintw(LINES / 2, COLS / 2 - 25, "Erro ao tocar musica!");
-                    mvprintw(LINES / 2 + 1, COLS / 2 - 20, "Verifique: audio/Menu.mp3");
+                    mvprintw(LINES / 2 + 1, COLS / 2 - 20, "Verifique: sounds/Menu.mp3");
                     mvprintw(LINES / 2 + 3, COLS / 2 - 15, "Pressione qualquer tecla...");
                     refresh();
                     nodelay(stdscr, FALSE);

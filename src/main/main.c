@@ -84,13 +84,13 @@ int main(void) {
             const char* musica_fase = NULL;
             switch (dificuldade_escolhida) {
                 case DIFICULDADE_FACIL:
-                    musica_fase = "audio/Fase_1.mp3";
+                    musica_fase = "sounds/Fase_1.mp3";
                     break;
                 case DIFICULDADE_MEDIO:
-                    musica_fase = "audio/Fase_2.mp3";
+                    musica_fase = "sounds/Fase_2.mp3";
                     break;
                 case DIFICULDADE_DIFICIL:
-                    musica_fase = "audio/Fase_3.mp3";
+                    musica_fase = "sounds/Fase_3.mp3";
                     break;
             }
             if (musica_fase && audio_disponivel_global) {
@@ -221,7 +221,7 @@ int main(void) {
                 }
                 // Voltar para Menu.mp3 (não é fase média, então volume normal)
                 definir_dificuldade_musica(0);
-                tocar_musica("audio/Menu.mp3");
+                tocar_musica("sounds/Menu.mp3");
             }
             
             finalizar_ncurses();

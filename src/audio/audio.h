@@ -18,7 +18,7 @@ void definir_musica_ligada(int ligada);
 int tocar_musica(const char* arquivo);
 
 // Toca música uma vez e depois volta para Menu.mp3
-int tocar_musica_temporaria(const char* arquivo);
+int tocar_sound_effect(const char* arquivo);
 
 // Para a música
 void parar_musica(void);

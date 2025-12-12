@@ -200,9 +200,9 @@ int main(void) {
             parar_musica();
             if (audio_disponivel_global) {
                 if (vitoria) {
-                    tocar_musica_temporaria("audio/win.mp3");
+                    tocar_sound_effect("sounds/win.mp3");
                 } else {
-                    tocar_musica_temporaria("audio/failed.mp3");
+                    tocar_sound_effect("sounds/failed.mp3");
                 }
             }
             

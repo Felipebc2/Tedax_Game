@@ -10,10 +10,8 @@ static int audio_inicializado = 0;
 static int audio_inicializado = 0;
 #endif
 
-// Flag para indicar se é a fase média (para volume aumentado)
+// Flags
 static int e_fase_media = 0;
-
-// Flag para indicar se a música está ligada (0 = desligada, 1 = ligada)
 static int musica_ligada = 0;
 
 int inicializar_audio(void) {
@@ -28,7 +26,6 @@ int inicializar_audio(void) {
     int flags = MIX_INIT_MP3;
     if ((Mix_Init(flags) & flags) != flags) {
         fprintf(stderr, "Aviso: Suporte MP3 não disponível: %s\n", Mix_GetError());
-        // Continuar mesmo sem MP3, pode ser que funcione de qualquer forma
     }
     
     audio_inicializado = 1;
@@ -41,17 +38,12 @@ int inicializar_audio(void) {
 #endif
 }
 
-int audio_disponivel(void) {
-    return audio_inicializado;
-}
+int audio_disponivel(void) { return audio_inicializado; }
+void definir_dificuldade_musica(int e_fase_media_flag) { e_fase_media = e_fase_media_flag; }
 
-void definir_dificuldade_musica(int e_fase_media_flag) {
-    e_fase_media = e_fase_media_flag;
-}
-
+// Quando a música é desligada, o volume é definido como 0
 void definir_musica_ligada(int ligada) {
     musica_ligada = ligada;
-    // Se desligar a música, definir volume como 0 imediatamente
     if (!ligada && audio_inicializado) {
 #ifdef HAVE_SDL2_MIXER
         Mix_VolumeMusic(0);
@@ -61,7 +53,6 @@ void definir_musica_ligada(int ligada) {
 
 int tocar_musica(const char* arquivo) {
 #ifdef HAVE_SDL2_MIXER
-    // Se já tem música tocando, parar primeiro
     if (musica_atual) {
         Mix_HaltMusic();
         Mix_FreeMusic(musica_atual);
@@ -74,17 +65,16 @@ int tocar_musica(const char* arquivo) {
         return 0;
     }
     
-    // Ajustar volume baseado no estado da música e dificuldade
-    int volume = 0; // Volume padrão (silencioso se música desligada)
+    int volume = 0; // Volume quando inicializa: 0
     if (musica_ligada) {
-        volume = 64; // Volume padrão (50%)
+        volume = 64; // Volume padrão
         if (e_fase_media) {
-            volume = 80; // 25% mais alto que 64 para fase média
+            volume = 80; // Um pouco mais alto
         }
     }
     Mix_VolumeMusic(volume);
     
-    // Tocar música em loop (-1 = loop infinito)
+    // Tocar músicas em loop (-1 = loop infinito)
     if (Mix_PlayMusic(musica_atual, -1) < 0) {
         fprintf(stderr, "Aviso: Não foi possível tocar música: %s\n", Mix_GetError());
         Mix_FreeMusic(musica_atual);
@@ -94,12 +84,12 @@ int tocar_musica(const char* arquivo) {
     
     return 1;
 #else
-    (void)arquivo; // Evitar warning de parâmetro não usado
+    (void)arquivo;
     return 0;
 #endif
 }
 
-int tocar_musica_temporaria(const char* arquivo) {
+int tocar_sound_effect(const char* arquivo) {
 #ifdef HAVE_SDL2_MIXER
     // Se já tem música tocando, parar primeiro
     if (musica_atual) {
@@ -114,17 +104,11 @@ int tocar_musica_temporaria(const char* arquivo) {
         return 0;
     }
     
-    // Ajustar volume baseado no estado da música e dificuldade
-    int volume = 0; // Volume padrão (silencioso se música desligada)
-    if (musica_ligada) {
-        volume = 64; // Volume padrão (50%)
-        if (e_fase_media) {
-            volume = 80; // 25% mais alto que 64 para fase média
-        }
-    }
+    int volume = 0; // Volume quando inicializa: 0
+    if (musica_ligada) { volume = 64; } // Volume padrão
     Mix_VolumeMusic(volume);
     
-    // Tocar música uma vez (0 = sem loop)
+    // Tocar sound effect uma vez (0 = sem loop)
     if (Mix_PlayMusic(musica_atual, 0) < 0) {
         fprintf(stderr, "Aviso: Não foi possível tocar música: %s\n", Mix_GetError());
         Mix_FreeMusic(musica_atual);
@@ -134,7 +118,7 @@ int tocar_musica_temporaria(const char* arquivo) {
     
     return 1;
 #else
-    (void)arquivo; // Evitar warning de parâmetro não usado
+    (void)arquivo;
     return 0;
 #endif
 }
@@ -164,4 +148,3 @@ void finalizar_audio(void) {
     Mix_Quit();
 #endif
 }
-

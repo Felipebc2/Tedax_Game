@@ -305,6 +305,83 @@ void* thread_tedax(void* arg) {
             }
         }
         
+        // Verificar se este tedax está em espera e a bancada ficou livre
+        if (tedax->estado == TEDAX_ESPERANDO && tedax->bancada_atual >= 0) {
+            int bancada_idx = tedax->bancada_atual;
+            // Verificar se a bancada está livre e este tedax é o que está registrado como esperando
+            if (g->bancadas[bancada_idx].estado == BANCADA_LIVRE && 
+                g->bancadas[bancada_idx].tedax_esperando == tedax->id) {
+                // Bancada ficou livre e este tedax é o primeiro da fila: ocupar
+                g->bancadas[bancada_idx].estado = BANCADA_OCUPADA;
+                g->bancadas[bancada_idx].tedax_ocupando = tedax->id;
+                g->bancadas[bancada_idx].tedax_esperando = -1;
+                tedax->estado = TEDAX_OCUPADO;
+                
+                // Garantir que o módulo está em EM_EXECUCAO e com tempo correto
+                if (tedax->modulo_atual >= 0) {
+                    Modulo *mod_esperando = &g->modulos[tedax->modulo_atual];
+                    if (mod_esperando->estado != MOD_EM_EXECUCAO) {
+                        mod_esperando->estado = MOD_EM_EXECUCAO;
+                    }
+                    if (mod_esperando->tempo_restante <= 0) {
+                        mod_esperando->tempo_restante = mod_esperando->tempo_total;
+                    }
+                }
+            } else if (g->bancadas[bancada_idx].estado == BANCADA_OCUPADA && 
+                       g->bancadas[bancada_idx].tedax_ocupando != tedax->id &&
+                       g->bancadas[bancada_idx].tedax_esperando != tedax->id) {
+                // Outro tedax ocupou a bancada e este não está mais na fila: procurar outra bancada
+                int bancada_encontrada = 0;
+                for (int i = 0; i < g->qtd_bancadas; i++) {
+                    if (g->bancadas[i].estado == BANCADA_LIVRE) {
+                        // Limpar registro anterior
+                        if (bancada_idx >= 0 && bancada_idx < g->qtd_bancadas) {
+                            if (g->bancadas[bancada_idx].tedax_esperando == tedax->id) {
+                                g->bancadas[bancada_idx].tedax_esperando = -1;
+                            }
+                        }
+                        // Ocupar nova bancada
+                        tedax->bancada_atual = i;
+                        g->bancadas[i].estado = BANCADA_OCUPADA;
+                        g->bancadas[i].tedax_ocupando = tedax->id;
+                        g->bancadas[i].tedax_esperando = -1;
+                        tedax->estado = TEDAX_OCUPADO;
+                        bancada_encontrada = 1;
+                        
+                        // Garantir que o módulo está em EM_EXECUCAO
+                        if (tedax->modulo_atual >= 0) {
+                            Modulo *mod_esperando = &g->modulos[tedax->modulo_atual];
+                            if (mod_esperando->estado != MOD_EM_EXECUCAO) {
+                                mod_esperando->estado = MOD_EM_EXECUCAO;
+                            }
+                            if (mod_esperando->tempo_restante <= 0) {
+                                mod_esperando->tempo_restante = mod_esperando->tempo_total;
+                            }
+                        }
+                        break;
+                    }
+                }
+                
+                if (!bancada_encontrada) {
+                    // Nenhuma bancada livre: manter em espera na primeira disponível
+                    int nova_bancada_idx = 0;
+                    if (bancada_idx != nova_bancada_idx) {
+                        // Limpar registro anterior
+                        if (bancada_idx >= 0 && bancada_idx < g->qtd_bancadas) {
+                            if (g->bancadas[bancada_idx].tedax_esperando == tedax->id) {
+                                g->bancadas[bancada_idx].tedax_esperando = -1;
+                            }
+                        }
+                        // Registrar na nova bancada apenas se não houver outro esperando
+                        if (g->bancadas[nova_bancada_idx].tedax_esperando < 0) {
+                            tedax->bancada_atual = nova_bancada_idx;
+                            g->bancadas[nova_bancada_idx].tedax_esperando = tedax->id;
+                        }
+                    }
+                }
+            }
+        }
+        
         // Verificar se este tedax acabou de sair da espera e precisa começar a processar
         // Isso garante que módulos atribuídos durante espera sejam processados imediatamente
         if (tedax->estado == TEDAX_OCUPADO && tedax->modulo_atual >= 0) {
@@ -371,31 +448,35 @@ void* thread_tedax(void* arg) {
                     g->bancadas[bancada_idx].tedax_ocupando = -1;
                     
                     // Verificar se há tedax esperando por esta bancada
-                    if (g->bancadas[bancada_idx].tedax_esperando >= 0) {
+                    // IMPORTANTE: Verificar se a bancada ainda está livre antes de atribuir
+                    if (g->bancadas[bancada_idx].estado == BANCADA_LIVRE && 
+                        g->bancadas[bancada_idx].tedax_esperando >= 0) {
                         int tedax_esperando_id = g->bancadas[bancada_idx].tedax_esperando;
                         // Procurar o tedax pelo ID
                         for (int i = 0; i < g->qtd_tedax; i++) {
                             if (g->tedax[i].id == tedax_esperando_id && 
                                 g->tedax[i].estado == TEDAX_ESPERANDO &&
                                 g->tedax[i].bancada_atual == bancada_idx) {
-                                // Ocupar bancada com o tedax que estava esperando
-                                g->bancadas[bancada_idx].estado = BANCADA_OCUPADA;
-                                g->bancadas[bancada_idx].tedax_ocupando = g->tedax[i].id;
-                                g->bancadas[bancada_idx].tedax_esperando = -1;
-                                g->tedax[i].estado = TEDAX_OCUPADO;
-                                
-                                // Garantir que o módulo está em EM_EXECUCAO e com tempo correto
-                                if (g->tedax[i].modulo_atual >= 0) {
-                                    Modulo *mod_esperando = &g->modulos[g->tedax[i].modulo_atual];
-                                    if (mod_esperando->estado != MOD_EM_EXECUCAO) {
-                                        mod_esperando->estado = MOD_EM_EXECUCAO;
-                                    }
-                                    // Se o tempo foi zerado ou está inválido, resetar
-                                    if (mod_esperando->tempo_restante <= 0) {
-                                        mod_esperando->tempo_restante = mod_esperando->tempo_total;
+                                // Verificar novamente se a bancada ainda está livre (evitar condição de corrida)
+                                if (g->bancadas[bancada_idx].estado == BANCADA_LIVRE) {
+                                    // Ocupar bancada com o tedax que estava esperando
+                                    g->bancadas[bancada_idx].estado = BANCADA_OCUPADA;
+                                    g->bancadas[bancada_idx].tedax_ocupando = g->tedax[i].id;
+                                    g->bancadas[bancada_idx].tedax_esperando = -1;
+                                    g->tedax[i].estado = TEDAX_OCUPADO;
+                                    
+                                    // Garantir que o módulo está em EM_EXECUCAO e com tempo correto
+                                    if (g->tedax[i].modulo_atual >= 0) {
+                                        Modulo *mod_esperando = &g->modulos[g->tedax[i].modulo_atual];
+                                        if (mod_esperando->estado != MOD_EM_EXECUCAO) {
+                                            mod_esperando->estado = MOD_EM_EXECUCAO;
+                                        }
+                                        // Se o tempo foi zerado ou está inválido, resetar
+                                        if (mod_esperando->tempo_restante <= 0) {
+                                            mod_esperando->tempo_restante = mod_esperando->tempo_total;
+                                        }
                                     }
                                 }
-                                
                                 break;
                             }
                         }
@@ -772,12 +853,55 @@ void* thread_coordenador(void* arg) {
                                 g->bancadas[bancada_idx].tedax_esperando = -1;
                             } else {
                                 // Bancada ocupada: tedax entra em espera
-                                t->estado = TEDAX_ESPERANDO;
-                                t->modulo_atual = modulo_idx;
-                                t->bancada_atual = bancada_idx;
-                                
-                                // Registrar que este tedax está esperando por esta bancada
-                                g->bancadas[bancada_idx].tedax_esperando = t->id;
+                                // Verificar se já há outro tedax esperando por esta bancada
+                                if (g->bancadas[bancada_idx].tedax_esperando >= 0) {
+                                    // Já há outro tedax esperando: procurar outra bancada livre
+                                    int bancada_encontrada = 0;
+                                    for (int i = 0; i < g->qtd_bancadas; i++) {
+                                        if (g->bancadas[i].estado == BANCADA_LIVRE && 
+                                            g->bancadas[i].tedax_esperando < 0) {
+                                            // Bancada livre e sem ninguém esperando: ocupar
+                                            t->estado = TEDAX_OCUPADO;
+                                            t->modulo_atual = modulo_idx;
+                                            t->bancada_atual = i;
+                                            g->bancadas[i].estado = BANCADA_OCUPADA;
+                                            g->bancadas[i].tedax_ocupando = t->id;
+                                            g->bancadas[i].tedax_esperando = -1;
+                                            bancada_encontrada = 1;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if (!bancada_encontrada) {
+                                        // Nenhuma bancada livre: entrar em espera na primeira disponível sem fila
+                                        int bancada_espera = -1;
+                                        for (int i = 0; i < g->qtd_bancadas; i++) {
+                                            if (g->bancadas[i].tedax_esperando < 0) {
+                                                bancada_espera = i;
+                                                break;
+                                            }
+                                        }
+                                        
+                                        if (bancada_espera >= 0) {
+                                            t->estado = TEDAX_ESPERANDO;
+                                            t->modulo_atual = modulo_idx;
+                                            t->bancada_atual = bancada_espera;
+                                            g->bancadas[bancada_espera].tedax_esperando = t->id;
+                                        } else {
+                                            // Todas as bancadas têm alguém esperando: usar a primeira mesmo assim
+                                            t->estado = TEDAX_ESPERANDO;
+                                            t->modulo_atual = modulo_idx;
+                                            t->bancada_atual = bancada_idx;
+                                            // Não sobrescrever o tedax_esperando existente para evitar perda
+                                        }
+                                    }
+                                } else {
+                                    // Nenhum tedax esperando: registrar este tedax
+                                    t->estado = TEDAX_ESPERANDO;
+                                    t->modulo_atual = modulo_idx;
+                                    t->bancada_atual = bancada_idx;
+                                    g->bancadas[bancada_idx].tedax_esperando = t->id;
+                                }
                             }
                         }
                         

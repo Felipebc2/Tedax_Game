@@ -1,9 +1,9 @@
 #include "fases.h"
 #include "../game/game.h"
 
-// Configurações para cada dificuldade/fase
+// Config por dificuldade
 static const ConfigFase config_fases[] = {
-    // DIFICULDADE_FACIL
+    // FACIL
     {
         .num_tedax = 2,
         .num_bancadas = 1,
@@ -15,7 +15,7 @@ static const ConfigFase config_fases[] = {
         .tempo_variacao_execucao = 8    // Variação de 0 a 8 segundos
     },
     
-    // DIFICULDADE_MEDIO
+    // MEDIO
     {
         .num_tedax = 3,
         .num_bancadas = 2,
@@ -27,7 +27,7 @@ static const ConfigFase config_fases[] = {
         .tempo_variacao_execucao = 15   // Variação de 0 a 15 segundos (50% mais que fácil)
     },
     
-    // DIFICULDADE_DIFICIL
+    // DIFICIL
     {
         .num_tedax = 4,
         .num_bancadas = 3,
@@ -40,7 +40,7 @@ static const ConfigFase config_fases[] = {
     }
 };
 
-// Retorna a configuração da fase baseada na dificuldade
+// Get baseado na dificuldade
 const ConfigFase* obter_config_fase(Dificuldade dificuldade) {
     int index = 0;
     
@@ -55,7 +55,7 @@ const ConfigFase* obter_config_fase(Dificuldade dificuldade) {
             index = 2;
             break;
         default:
-            index = 0; // Default para fácil
+            index = 0;
             break;
     }
     

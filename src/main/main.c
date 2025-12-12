@@ -12,20 +12,17 @@
 #include "../fases/fases.h"
 
 // Buffer de instrução global (compartilhado entre threads)
-// Aumentado para suportar comandos do formato T1B1M1:ppp
+// Suporta comandos do formato T1B1M1:ppp
 char buffer_instrucao_global[64] = "";
-
-// Flag global para verificar se áudio está disponível
 int audio_disponivel_global = 0;
 
 int main(void) {
-    // Inicializar áudio (mas música começa desligada)
+    // Inicializar áudio (Música começa desligada)
     audio_disponivel_global = inicializar_audio();
     
     GameState g;
     
     while (1) {
-        // Inicializar ncurses temporariamente para o menu
         inicializar_ncurses();
         if (has_colors()) {
             start_color();
@@ -35,10 +32,9 @@ int main(void) {
             init_pair(4, COLOR_RED, COLOR_BLACK);
             init_pair(5, COLOR_BLUE, COLOR_BLACK);
             init_pair(6, COLOR_WHITE, COLOR_BLACK);
-            init_pair(7, COLOR_BLACK, COLOR_WHITE); // usado para fio preto
+            init_pair(7, COLOR_BLACK, COLOR_WHITE);
         }
         
-        // Mostrar menu principal
         int modo_escolhido = mostrar_menu_principal();
         if (modo_escolhido == -1) {
             finalizar_ncurses();
@@ -46,15 +42,14 @@ int main(void) {
             return 0;
         }
         
-        // Se escolheu Classico, mostrar menu de dificuldades
+        // Se escolheu Classico, mostrar menu de dificuldades do modo classico
         if (modo_escolhido == 0) {
             int dificuldade_menu = mostrar_menu_dificuldades();
             if (dificuldade_menu == -1) {
                 finalizar_ncurses();
-                continue; // Voltar ao menu principal
+                continue;
             }
             
-            // Converter índice do menu para enum Dificuldade
             Dificuldade dificuldade_escolhida;
             switch (dificuldade_menu) {
                 case 0: // Fácil
@@ -71,18 +66,14 @@ int main(void) {
                     break;
             }
     
-            // Obter configuração da fase para número de tedax e bancadas
             const ConfigFase *config = obter_config_fase(dificuldade_escolhida);
             int num_tedax = config->num_tedax;
             int num_bancadas = config->num_bancadas;
             
             // Finalizar ncurses temporário (será reinicializado nas threads)
             finalizar_ncurses();
-            
             // Parar música do menu e tocar música da fase baseada na dificuldade
             parar_musica();
-            
-            // Definir flag de fase média para ajuste de volume
             definir_dificuldade_musica(dificuldade_escolhida == DIFICULDADE_MEDIO);
             
             const char* musica_fase = NULL;
@@ -98,12 +89,9 @@ int main(void) {
                     break;
             }
             if (musica_fase && audio_disponivel_global) {
-                // Verificar se música está ligada antes de tocar
-                // Se estiver ligada, manter ligada; se não, tocar com volume 0
                 tocar_musica(musica_fase);
             }
             
-            // Inicializar jogo com a dificuldade escolhida
             inicializar_jogo(&g, dificuldade_escolhida, num_tedax, num_bancadas);
     
     // Criar threads
@@ -146,10 +134,8 @@ int main(void) {
         tick_count++;
         if (tick_count >= 5) { // 1 segundo
             pthread_mutex_lock(&g.mutex_jogo);
-            
             g.tempo_restante--;
             
-            // Verificar condições de fim de jogo
             if (todos_modulos_resolvidos(&g) && g.qtd_modulos > 0) {
                 g.jogo_terminou = 1;
                 g.jogo_rodando = 0;
@@ -169,7 +155,6 @@ int main(void) {
         }
     }
     
-    // Aguardar todas as threads terminarem
     pthread_join(thread_mural_id, NULL);
     pthread_join(thread_exibicao_id, NULL);
     for (int i = 0; i < g.qtd_tedax; i++) {
@@ -177,16 +162,14 @@ int main(void) {
     }
     pthread_join(thread_coordenador_id, NULL);
     
-    // Reconfigurar ncurses no thread principal para o menu pós-jogo
-    // (evita estado inconsistente após o uso em outras threads)
-    finalizar_ncurses();      // encerra estado anterior
-    initscr();                // inicia novo contexto
-    cbreak();                 // entrada imediata
-    noecho();                 // não ecoar
-    keypad(stdscr, TRUE);     // habilitar teclas especiais
-    nodelay(stdscr, FALSE);   // leitura bloqueante
-    timeout(-1);              // espera indefinida
-    curs_set(0);              // esconder cursor
+    finalizar_ncurses();
+    initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    nodelay(stdscr, FALSE);
+    timeout(-1);
+    curs_set(0);
     if (has_colors()) {
         start_color();
         init_pair(1, COLOR_CYAN, COLOR_BLACK);
@@ -195,7 +178,7 @@ int main(void) {
         init_pair(4, COLOR_RED, COLOR_BLACK);
         init_pair(5, COLOR_BLUE, COLOR_BLACK);
         init_pair(6, COLOR_WHITE, COLOR_BLACK);
-        init_pair(7, COLOR_BLACK, COLOR_WHITE); // fio preto
+        init_pair(7, COLOR_BLACK, COLOR_WHITE);
     }
     clear();
     refresh();
@@ -218,7 +201,6 @@ int main(void) {
             }
             pthread_mutex_unlock(&g.mutex_jogo);
             
-            // Parar música da fase e tocar música de vitória/derrota
             parar_musica();
             if (audio_disponivel_global) {
                 if (vitoria) {
@@ -228,20 +210,15 @@ int main(void) {
                 }
             }
             
-            // Mostrar menu pós-jogo (bloqueante - espera usuário pressionar R ou Q)
             int opcao = mostrar_menu_pos_jogo(vitoria, tempo_restante_final, erros_final);
             
-            // Após sair do menu, aguardar música temporária terminar (se ainda estiver tocando)
-            // e depois voltar para Menu.mp3
             if (audio_disponivel_global) {
-                // Aguardar até a música temporária terminar
                 while (musica_tocando()) {
                     struct timespec ts;
                     ts.tv_sec = 0;
                     ts.tv_nsec = 100000000L; // 0.1 segundos
                     nanosleep(&ts, NULL);
                 }
-                // Voltar para Menu.mp3 (não é fase média, então volume normal)
                 definir_dificuldade_musica(0);
                 tocar_musica("sounds/Menu.mp3");
             }
@@ -252,19 +229,15 @@ int main(void) {
                 printf("Jogo encerrado.\n");
                 return 0;
             } else if (opcao == 'r' || opcao == 'R') {
-                // Voltar ao menu principal (continuar o loop)
                 continue;
             }
         } else {
-            // Outros modos em breve - por enquanto apenas fecha
             finalizar_ncurses();
         }
         
-        // Parar música da fase ao sair do jogo
         parar_musica();
     }
     
-    // Finalizar áudio antes de sair
     parar_musica();
     finalizar_audio();
     
@@ -274,12 +247,3 @@ int main(void) {
     printf("Fim da execucao\n");
     return 0;
 }
-
-/*
- * Compilar com:
- * gcc -Wall -Wextra -std=c11 main.c game.c ui.c -o jogo -lncurses
- * 
- * Ou usar o Makefile:
- * make
- */
-

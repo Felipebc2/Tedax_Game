@@ -126,10 +126,6 @@ void gerar_novo_modulo(GameState *g) {
     pthread_cond_broadcast(&g->cond_modulo_disponivel);
 }
 
-// Função removida - lógica movida para thread_mural
-
-// Função removida - lógica movida para thread_tedax
-
 // Conta quantos módulos foram resolvidos
 // NOTA: Deve ser chamada com mutex_jogo já travado
 int contar_modulos_resolvidos(const GameState *g) {
